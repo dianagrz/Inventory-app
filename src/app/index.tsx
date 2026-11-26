@@ -1,62 +1,63 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Link } from 'expo-router';
+import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
+import { getCategorias } from '@/api/catalogo';
+import { Cargando, ErrorConReintento } from '@/components/estado-pantalla';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
+import { useApi } from '@/hooks/use-api';
+import { useTheme } from '@/hooks/use-theme';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
+export default function CategoriasScreen() {
+  const theme = useTheme();
+  const { datos, cargando, recargando, error, recargar, reintentar } = useApi(
+    (signal) => getCategorias(signal),
+    [],
   );
-}
 
-export default function HomeScreen() {
+  if (cargando) return <Cargando />;
+  if (error && !datos) return <ErrorConReintento mensaje={error} onReintentar={reintentar} />;
+
   return (
     <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
+      <FlatList
+        data={datos}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        columnWrapperStyle={styles.fila}
+        contentContainerStyle={styles.lista}
+        refreshControl={
+          <RefreshControl refreshing={recargando} onRefresh={recargar} tintColor={theme.text} />
+        }
+        ListHeaderComponent={
+          <ThemedText themeColor="textSecondary" style={styles.encabezado}>
+            Elige una categoría para ver sus productos
           </ThemedText>
-        </ThemedView>
-
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
+        }
+        ListEmptyComponent={
+          <ThemedText themeColor="textSecondary">No hay categorías disponibles.</ThemedText>
+        }
+        renderItem={({ item }) => (
+          <Link
+            href={{ pathname: '/productos/[categoriaId]', params: { categoriaId: item.id } }}
+            asChild>
+            <Pressable style={({ pressed }) => [styles.tarjetaWrapper, pressed && styles.presionado]}>
+              <ThemedView type="backgroundElement" style={styles.tarjeta}>
+                <View style={[styles.icono, { backgroundColor: item.color }]}>
+                  <ThemedText style={styles.emoji}>{item.icono}</ThemedText>
+                </View>
+                <ThemedText type="smallBold">{item.nombre}</ThemedText>
+                {item.totalProductos !== undefined && (
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {item.totalProductos} productos
+                  </ThemedText>
+                )}
+              </ThemedView>
+            </Pressable>
+          </Link>
+        )}
+      />
     </ThemedView>
   );
 }
@@ -64,35 +65,38 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
+  lista: {
+    padding: Spacing.three,
     gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+  encabezado: {
+    marginBottom: Spacing.two,
   },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
+  fila: {
     gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
+  },
+  tarjetaWrapper: {
+    flex: 1,
+  },
+  tarjeta: {
+    alignItems: 'center',
+    gap: Spacing.two,
     paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+    borderRadius: Spacing.three,
+  },
+  icono: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emoji: {
+    fontSize: 32,
+    lineHeight: 40,
+  },
+  presionado: {
+    opacity: 0.7,
   },
 });
