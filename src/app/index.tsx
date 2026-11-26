@@ -1,16 +1,32 @@
 import { Link } from 'expo-router';
-import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native';
+import {
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 
 import { getCategorias } from '@/api/catalogo';
 import { Cargando, ErrorConReintento } from '@/components/estado-pantalla';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useApi } from '@/hooks/use-api';
 import { useTheme } from '@/hooks/use-theme';
 
+const COLUMNAS = 2;
+const ALTO_TARJETA = 170;
+
 export default function CategoriasScreen() {
   const theme = useTheme();
+
+  // Todas las tarjetas miden lo mismo: el ancho disponible entre el número de columnas.
+  const { width } = useWindowDimensions();
+  const anchoLista = Math.min(width, MaxContentWidth);
+  const anchoTarjeta =
+    (anchoLista - Spacing.three * 2 - Spacing.three * (COLUMNAS - 1)) / COLUMNAS;
   const { datos, cargando, recargando, error, recargar, reintentar } = useApi(
     (signal) => getCategorias(signal),
     [],
@@ -24,8 +40,9 @@ export default function CategoriasScreen() {
       <FlatList
         data={datos}
         keyExtractor={(item) => item.id}
-        numColumns={2}
+        numColumns={COLUMNAS}
         columnWrapperStyle={styles.fila}
+        style={{ width: anchoLista, alignSelf: 'center' }}
         contentContainerStyle={styles.lista}
         refreshControl={
           <RefreshControl refreshing={recargando} onRefresh={recargar} tintColor={theme.text} />
@@ -42,18 +59,24 @@ export default function CategoriasScreen() {
           <Link
             href={{ pathname: '/productos/[categoriaId]', params: { categoriaId: item.id } }}
             asChild>
-            <Pressable style={({ pressed }) => [styles.tarjetaWrapper, pressed && styles.presionado]}>
-              <ThemedView type="backgroundElement" style={styles.tarjeta}>
-                <View style={[styles.icono, { backgroundColor: item.color }]}>
-                  <ThemedText style={styles.emoji}>{item.icono}</ThemedText>
-                </View>
-                <ThemedText type="smallBold">{item.nombre}</ThemedText>
-                {item.totalProductos !== undefined && (
-                  <ThemedText type="small" themeColor="textSecondary">
-                    {item.totalProductos} productos
+            <Pressable style={{ width: anchoTarjeta, height: ALTO_TARJETA }}>
+              {({ pressed }) => (
+                <ThemedView
+                  type="backgroundElement"
+                  style={[styles.tarjeta, pressed && styles.presionado]}>
+                  <View style={[styles.icono, { backgroundColor: item.color }]}>
+                    <ThemedText style={styles.emoji}>{item.icono}</ThemedText>
+                  </View>
+                  <ThemedText type="smallBold" numberOfLines={2} style={styles.nombre}>
+                    {item.nombre}
                   </ThemedText>
-                )}
-              </ThemedView>
+                  {item.totalProductos !== undefined && (
+                    <ThemedText type="small" themeColor="textSecondary">
+                      {item.totalProductos} productos
+                    </ThemedText>
+                  )}
+                </ThemedView>
+              )}
             </Pressable>
           </Link>
         )}
@@ -76,14 +99,16 @@ const styles = StyleSheet.create({
   fila: {
     gap: Spacing.three,
   },
-  tarjetaWrapper: {
-    flex: 1,
-  },
   tarjeta: {
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     gap: Spacing.two,
-    paddingVertical: Spacing.four,
+    padding: Spacing.three,
     borderRadius: Spacing.three,
+  },
+  nombre: {
+    textAlign: 'center',
   },
   icono: {
     width: 64,
