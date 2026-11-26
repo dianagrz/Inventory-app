@@ -70,11 +70,9 @@ export default function CategoriasScreen() {
                   <ThemedText type="smallBold" numberOfLines={2} style={styles.nombre}>
                     {item.nombre}
                   </ThemedText>
-                  {item.totalProductos !== undefined && (
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {item.totalProductos} productos
-                    </ThemedText>
-                  )}
+                  <ThemedText type="small" themeColor="textSecondary">
+                    {item.totalProductos} productos
+                  </ThemedText>
                 </ThemedView>
               )}
             </Pressable>

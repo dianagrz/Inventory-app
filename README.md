@@ -10,11 +10,23 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
    npm install
    ```
 
-2. Start the app
+2. Start the catalog API in its own terminal
 
    ```bash
-   npx expo start
+   npm run api
    ```
+
+   Verify it at `http://localhost:3000/api/salud`.
+
+3. Start the app
+
+   ```bash
+   cp .env.example .env.local
+   npm start
+   ```
+
+   For a physical phone or Android emulator, set `EXPO_PUBLIC_API_URL` in
+   `.env.local` using the corresponding address in `.env.example`.
 
 In the output, you'll find options to open the app in a
 
