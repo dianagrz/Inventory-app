@@ -46,7 +46,12 @@ export function useApi<T>(
     } catch (e) {
       if (controller.signal.aborted) return;
       const mensaje = e instanceof Error ? e.message : 'Ocurrió un error inesperado.';
-      setEstado((prev) => ({ ...prev, error: mensaje, clave: claveActual, recargando: false }));
+      setEstado((prev) => ({
+        datos: prev.clave === claveActual ? prev.datos : undefined,
+        error: mensaje,
+        clave: claveActual,
+        recargando: false,
+      }));
     }
   }, []);
 

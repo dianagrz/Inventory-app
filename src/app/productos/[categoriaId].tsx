@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
 
-import { getCategoria, getProductosPorCategoria } from '@/api/catalogo';
+import { getProductosPorCategoria } from '@/api/catalogo';
 import { Cargando, ErrorConReintento } from '@/components/estado-pantalla';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -14,24 +14,17 @@ export default function ProductosScreen() {
   const theme = useTheme();
   const { categoriaId } = useLocalSearchParams<{ categoriaId: string }>();
 
-  // Pide la categoría (para el título y color) y sus productos al mismo tiempo.
   const { datos, cargando, recargando, error, recargar, reintentar } = useApi(
-    async (signal) => {
-      const [categoria, productos] = await Promise.all([
-        getCategoria(categoriaId, signal),
-        getProductosPorCategoria(categoriaId, signal),
-      ]);
-      return { categoria, productos };
-    },
+    (signal) => getProductosPorCategoria(categoriaId, signal),
     [categoriaId],
   );
 
   if (cargando) return <Cargando />;
-  if (error && !datos) return <ErrorConReintento mensaje={error} onReintentar={reintentar} />;
+  if (error && datos === undefined) {
+    return <ErrorConReintento mensaje={error} onReintentar={reintentar} />;
+  }
 
-  const categoria = datos?.categoria;
-
-  if (!categoria) {
+  if (!datos) {
     return (
       <ThemedView style={styles.vacio}>
         <Stack.Screen options={{ title: 'No encontrada' }} />
@@ -40,11 +33,13 @@ export default function ProductosScreen() {
     );
   }
 
+  const { categoria, productos } = datos;
+
   return (
     <ThemedView style={styles.container}>
       <Stack.Screen options={{ title: categoria.nombre }} />
       <FlatList
-        data={datos.productos}
+        data={productos}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.lista}
         refreshControl={
